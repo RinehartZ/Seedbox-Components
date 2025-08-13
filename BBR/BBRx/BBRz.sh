@@ -32,7 +32,8 @@ if [ ! -f $HOME/tcp_bbrz.c ]; then
 	echo "Error: Download failed! Exiting." >&2
 	exit 1
 fi
-kernel_ver=6.1.0
+# DKMS 模块版本（与内核无关）。建议固定或使用日期字符串
+module_ver=1.0.0
 algo=bbrz
 
 # Compile and install
@@ -45,57 +46,45 @@ cd $HOME/.bbr/src
 
 mv $HOME/$bbr_src $HOME/.bbr/src/$bbr_src
 
-# Create Makefile
+# Create Makefile（仅声明需要构建的目标，具体内核构建目录交由 dkms.conf 传入）
 cat > ./Makefile << EOF
 obj-m:=$bbr_obj
-
-default:
-	make -C /lib/modules/\$(shell uname -r)/build M=\$(PWD)/src modules
-
-clean:
-	-rm modules.order
-	-rm Module.symvers
-	-rm .[!.]* ..?*
-	-rm $bbr_file.mod
-	-rm $bbr_file.mod.c
-	-rm *.o
-	-rm *.cmd
 EOF
 
-    # Create dkms.conf
+# Create dkms.conf（使用 dkms 注入的 kernel_source_dir/ dkms_tree 等变量，确保针对目标内核构建）
 cd ..
 cat > ./dkms.conf << EOF
-MAKE="'make' -C src/"
-CLEAN="make -C src/ clean"
+MAKE="make -C \${kernel_source_dir} M=\${dkms_tree}/\${PACKAGE_NAME}/\${PACKAGE_VERSION}/build/src modules"
+CLEAN="make -C \${kernel_source_dir} M=\${dkms_tree}/\${PACKAGE_NAME}/\${PACKAGE_VERSION}/build/src clean"
 BUILT_MODULE_NAME=$bbr_file
 BUILT_MODULE_LOCATION=src/
 DEST_MODULE_LOCATION=/updates/net/ipv4
 PACKAGE_NAME=$algo
-PACKAGE_VERSION=$kernel_ver
+PACKAGE_VERSION=$module_ver
 AUTOINSTALL=yes
 EOF
 
 # Start dkms install
-cp -R . /usr/src/$algo-$kernel_ver
+cp -R . /usr/src/$algo-$module_ver
 
-dkms add -m $algo -v $kernel_ver
+dkms add -m $algo -v $module_ver
 if [ ! $? -eq 0 ]; then
     sed -i '/tcp_bbrz/d' /etc/modules
-    dkms remove -m $algo/$kernel_ver --all
+    dkms remove -m $algo/$module_ver --all
     exit 1
 fi
 
-dkms build -m $algo -v $kernel_ver
+dkms build -m $algo -v $module_ver
 if [ ! $? -eq 0 ]; then
     sed -i '/tcp_bbrz/d' /etc/modules
-    dkms remove -m $algo/$kernel_ver --all
+    dkms remove -m $algo/$module_ver --all
     exit 1
 fi
 
-dkms install -m $algo -v $kernel_ver
+dkms install -m $algo -v $module_ver
 if [ ! $? -eq 0 ]; then
     sed -i '/tcp_bbrz/d' /etc/modules
-    dkms remove -m $algo/$kernel_ver --all
+    dkms remove -m $algo/$module_ver --all
     exit 1
 fi
 
