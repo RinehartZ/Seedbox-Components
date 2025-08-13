@@ -20,6 +20,36 @@ if [ ! -f /usr/src/linux-headers-$(uname -r)/.config ]; then
 		exit 1
 	fi
 	apt-get -y install linux-headers-$(uname -r)
+	# Ensure header meta package is installed so headers follow kernel upgrades
+	arch=$(dpkg --print-architecture 2>/dev/null || uname -m)
+	uname_r=$(uname -r)
+	if echo "$uname_r" | grep -q '\-cloud-'; then
+		flavor="cloud"
+	else
+		flavor="generic"
+	fi
+	case "$arch" in
+		amd64)
+			if [ "$flavor" = "cloud" ]; then
+				header_meta_pkg="linux-headers-cloud-amd64"
+			else
+				header_meta_pkg="linux-headers-amd64"
+			fi
+			;;
+		arm64|aarch64)
+			if [ "$flavor" = "cloud" ]; then
+				header_meta_pkg="linux-headers-cloud-arm64"
+			else
+				header_meta_pkg="linux-headers-arm64"
+			fi
+			;;
+		*)
+			header_meta_pkg=""
+			;;
+	esac
+	if [ -n "$header_meta_pkg" ]; then
+		apt-get -y install "$header_meta_pkg"
+	fi
 	if [ ! -f /usr/src/linux-headers-$(uname -r)/.config ]; then
 		echo "Error: linux-headers-$(uname -r) is not installed" >&2
 		exit 1
