@@ -56,8 +56,8 @@ cd ..
 cat > ./dkms.conf << EOF
 PACKAGE_NAME=$algo
 PACKAGE_VERSION=$module_ver
-MAKE="make -C \${kernel_source_dir} M=\${dkms_tree}/\${PACKAGE_NAME}/\${PACKAGE_VERSION}/build/src modules"
-CLEAN="make -C \${kernel_source_dir} M=\${dkms_tree}/\${PACKAGE_NAME}/\${PACKAGE_VERSION}/build/src clean"
+MAKE="make -C \${kernel_source_dir} M=\${dkms_tree}/$algo/$module_ver/build/src modules"
+CLEAN="make -C \${kernel_source_dir} M=\${dkms_tree}/$algo/$module_ver/build/src clean"
 BUILT_MODULE_NAME=$bbr_file
 BUILT_MODULE_LOCATION=src/
 DEST_MODULE_LOCATION=/updates/net/ipv4
