@@ -13,6 +13,14 @@ if [ ! -x /usr/sbin/dkms ]; then
 		exit 1
 	fi
 fi
+
+if dkms status | grep -q "bbry/"; then
+	for module_ver in $(dkms status | grep "bbry/" | awk -F, '{print $1}' | awk -F/ '{print $2}' | sort -u); do
+		echo "Removing existing bbry module version: $module_ver"
+		dkms remove -m bbry -v "$module_ver" --all
+	done
+fi
+
 # Ensure header meta package is installed so headers follow kernel upgrades (always try)
 arch=$(dpkg --print-architecture 2>/dev/null || uname -m)
 uname_r=$(uname -r)
