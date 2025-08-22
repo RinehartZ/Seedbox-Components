@@ -232,9 +232,8 @@ Type=exec
 User=$username
 LimitNOFILE=infinity
 ExecStart=/usr/bin/qbittorrent-nox
-ExecStop=/usr/bin/killall -w -s 9 /usr/bin/qbittorrent-nox
 Restart=on-failure
-TimeoutStopSec=20
+TimeoutStopSec=10
 RestartSec=10
 
 [Install]
